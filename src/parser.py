@@ -12,7 +12,7 @@ cur = db[0]
 conn = db[1]
 
 # reading .csv file
-with open('sleep_health.csv') as file:
+with open('../data/sleep_health.csv') as file:
 
     lines = file.readlines()
     # skip the first line --> header
