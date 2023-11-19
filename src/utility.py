@@ -1,3 +1,4 @@
+from src import parser
 import matplotlib.pyplot as plt
 
 # categories names
@@ -17,7 +18,7 @@ def get_occupation_category_name():
 
 
 def get_sleep_disorder_category_name():
-    return category_list[3]
+    return category_list[3].replace('_', ' ')
 
 
 # data names
@@ -62,9 +63,7 @@ graph_settings = {'font-size': 4,
                   'title-size': 12,
                   'title-size-small': 6,
                   'category-matrix': (2, 2),
-                  'data-matrix': (4, 2)}
-def set_graph_settings():
-    plt.rcParams.update({'font.size': graph_settings.get('font-size')})
+                  'data-matrix': (2, 4)}
 
 
 palette = {'blue': '#0072BD',
@@ -74,6 +73,8 @@ palette = {'blue': '#0072BD',
            'green': '#77AC30',
            'cyan': '#4DBEEE',
            'red': '#A2142F'}
+
+
 def get_color(color='blue'):
     color_result = palette.get(color)
 
@@ -83,15 +84,30 @@ def get_color(color='blue'):
         return color_result
 
 
-def draw_category_bar(x, y, position, color='#0072BD'):
+def draw_category_bar(x, y, position, title, color='#0072BD'):
     mtrx = graph_settings.get('category-matrix')
     plt.subplot(mtrx[0], mtrx[1], position)
     plt.bar(x, y, color=color)
-    plt.title(get_bmi_category_name().upper(), size=graph_settings.get('title-size'))
+    plt.title(title.upper(), size=graph_settings.get('title-size'))
 
 
-def draw_data_hist(data, position, color='#0072BD'):
+def draw_data_hist(data, position, title, color='#0072BD'):
     mtrx = graph_settings.get('data-matrix')
     plt.subplot(mtrx[0], mtrx[1], position)
-    plt.hist(data, color)
-    plt.title(get_quality_of_sleep_data_name().upper(), size=graph_settings.get('title-size-small'))
+    plt.hist(data, color=color)
+    plt.title(title.upper(), size=graph_settings.get('title-size-small'))
+
+
+# misc
+def get_percentage(weigh, decimal=2):
+    if decimal >= 0:
+        return str(round((weigh * 100) / parser.record_count, decimal)) + '%'
+    else:
+        return str(int((weigh * 100) / parser.record_count)) + '%'
+
+
+def remove_vowels(string):
+    vowels = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']
+    result = ''.join([char for char in string if char not in vowels])
+    return result
+

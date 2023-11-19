@@ -109,5 +109,3 @@ def select_all_people(limit=0):
 
     return repo.exec(sql)
 
-def get_record_count():
-    return record_count
