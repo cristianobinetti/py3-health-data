@@ -1,6 +1,6 @@
+from src import hidden
 import psycopg2
 import time
-import hidden
 
 # load the secrets
 secrets = hidden.secrets()
@@ -21,7 +21,7 @@ conn = psycopg2.connect(host=secrets['host'],
                         connect_timeout=3)
 cur = conn.cursor()
 
-#"""
+# """
 # <!> DROP TABLE TO TEST <!>
 log('DROP TABLE')
 
@@ -33,7 +33,7 @@ sql = 'DROP TABLE IF EXISTS occupation CASCADE;'
 print(sql)
 cur.execute(sql)
 
-sql = 'DROP TABLE IF EXISTS bmi_category CASCADE;'
+sql = 'DROP TABLE IF EXISTS bmi CASCADE;'
 print(sql)
 cur.execute(sql)
 
@@ -45,7 +45,7 @@ sql = 'DROP TABLE IF EXISTS person CASCADE;'
 print(sql)
 cur.execute(sql)
 # <!> DROP TABLE TO TEST <!>
-#"""
+# """
 
 # CREATE TABLE
 log('CREATE TABLE')
@@ -64,10 +64,10 @@ CREATE TABLE IF NOT EXISTS occupation
 print(sql)
 cur.execute(sql)
 
-# create bmi_category table
+# create bmi table
 sql = '''
-CREATE TABLE IF NOT EXISTS bmi_category
-(id SERIAL PRIMARY KEY, bmi_category VARCHAR(32) UNIQUE NOT NULL, count INTEGER NOT NULL);'''
+CREATE TABLE IF NOT EXISTS bmi
+(id SERIAL PRIMARY KEY, bmi VARCHAR(32) UNIQUE NOT NULL, count INTEGER NOT NULL);'''
 print(sql)
 cur.execute(sql)
 
@@ -89,7 +89,7 @@ sleep_duration DECIMAL NOT NULL CHECK (sleep_duration > 0),
 quality_of_sleep INTEGER NOT NULL CHECK (quality_of_sleep > 0),
 physical_activity_level INTEGER NULL CHECK (physical_activity_level > 0),
 stress_level INTEGER NULL CHECK (stress_level > 0),
-bmi_category_id INTEGER NOT NULL,
+bmi_id INTEGER NOT NULL,
 blood_pressure VARCHAR(8),
 hearth_rate INTEGER NULL CHECK (hearth_rate > 0),
 daily_steps INTEGER NULL CHECK (daily_steps > 0),
@@ -97,7 +97,7 @@ sleep_disorder_id INTEGER NOT NULL,
 
 FOREIGN KEY(gender_id) REFERENCES gender(id),
 FOREIGN KEY(occupation_id) REFERENCES occupation(id),
-FOREIGN KEY(bmi_category_id) REFERENCES bmi_category(id),
+FOREIGN KEY(bmi_id) REFERENCES bmi(id),
 FOREIGN KEY(sleep_disorder_id) REFERENCES sleep_disorder(id));'''
 print(sql)
 cur.execute(sql)
@@ -112,7 +112,7 @@ def select_fk_category(query, *args):
     conn.commit()
 
     result = cur.fetchone()[0]
-    #print('SELECT category:', args[0], 'FK:', result)
+    # print('SELECT category:', args[0], 'FK:', result)
     return result
 
 
@@ -129,7 +129,7 @@ def insert_person(args):
         INSERT INTO person
         (gender_id, age, occupation_id,
         sleep_duration, quality_of_sleep, physical_activity_level,
-        stress_level, bmi_category_id, blood_pressure,
+        stress_level, bmi_id, blood_pressure,
         hearth_rate, daily_steps, sleep_disorder_id)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;'''
     cur.execute(query, params)
@@ -147,16 +147,13 @@ def update_category(query, *args):
 
 
 # UTILITY
-def get_connection():
-    return cur, conn
-
-def check_query(limit):
+def check_query(limit=5):
     time.sleep(1)
     print('\nCHECK JOIN QUERY:')
-    sql = '''SELECT p.id, g.gender, o.occupation, b.bmi_category, s.sleep_disorder
+    sql = '''SELECT p.id, g.gender, o.occupation, b.bmi, s.sleep_disorder
     FROM person as p JOIN gender as g ON p.gender_id = g.id
     JOIN occupation as o ON p.occupation_id = o.id
-    JOIN bmi_category as b ON p.bmi_category_id = b.id
+    JOIN bmi as b ON p.bmi_id = b.id
     JOIN sleep_disorder as s ON p.sleep_disorder_id = s.id
     ORDER BY p.id LIMIT %s;'''
     print(sql % limit)
@@ -166,3 +163,27 @@ def check_query(limit):
     result = cur.fetchall()
     for row in result:
         print(row)
+
+    conn.commit()
+
+
+def get_connection():
+    return cur, conn
+
+
+def close_connection():
+    conn.commit()
+    cur.close()
+    print('\nClosing connection ...')
+    time.sleep(1)
+
+    print('Good bye!')
+    quit()
+
+
+def exec(query):
+
+    cur.execute(query)
+    conn.commit()
+
+    return cur.fetchall()

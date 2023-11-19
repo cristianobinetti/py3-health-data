@@ -1,19 +1,15 @@
-import repository as repo
-import time
+from src import repository as repo
+from src import utility as util
+
+record_count = 0
 
 gender_dict = dict()
 occupation_dict = dict()
-bmi_category_dict = dict()
+bmi_dict = dict()
 sleep_disorder_dict = dict()
-
-# get db cur, conn
-db = repo.get_connection()
-cur = db[0]
-conn = db[1]
 
 # reading .csv file
 with open('../data/sleep_health.csv') as file:
-
     lines = file.readlines()
     # skip the first line --> header
     lines.pop(0)
@@ -53,9 +49,9 @@ with open('../data/sleep_health.csv') as file:
         if occupation_dict.get(line[3], 0) == 1:
             repo.insert_category('INSERT INTO occupation (occupation, count) VALUES (%s, %s)', line[3], 1)
 
-        bmi_category_dict[line[8]] = bmi_category_dict.get(line[8], 0) + 1
-        if bmi_category_dict.get(line[8], 0) == 1:
-            repo.insert_category('INSERT INTO bmi_category (bmi_category, count) VALUES (%s, %s)', line[8], 1)
+        bmi_dict[line[8]] = bmi_dict.get(line[8], 0) + 1
+        if bmi_dict.get(line[8], 0) == 1:
+            repo.insert_category('INSERT INTO bmi (bmi, count) VALUES (%s, %s)', line[8], 1)
 
         sleep_disorder_dict[line[12]] = sleep_disorder_dict.get(line[12], 0) + 1
         if sleep_disorder_dict.get(line[12], 0) == 1:
@@ -64,12 +60,13 @@ with open('../data/sleep_health.csv') as file:
         # fetching category id
         line[1] = repo.select_fk_category('SELECT id FROM gender WHERE gender = %s', line[1])
         line[3] = repo.select_fk_category('SELECT id FROM occupation WHERE occupation = %s', line[3])
-        line[8] = repo.select_fk_category('SELECT id FROM bmi_category WHERE bmi_category = %s', line[8])
+        line[8] = repo.select_fk_category('SELECT id FROM bmi WHERE bmi = %s', line[8])
         line[12] = repo.select_fk_category('SELECT id FROM sleep_disorder WHERE sleep_disorder = %s', line[12])
 
         # insert person record
         line.pop(0)
         repo.insert_person(line)
+        record_count += 1
 
 # update category count
 for cat, count in gender_dict.items():
@@ -78,23 +75,39 @@ for cat, count in gender_dict.items():
 for cat, count in occupation_dict.items():
     repo.update_category('UPDATE occupation SET count = %s WHERE occupation = %s', count, cat)
 
-for cat, count in bmi_category_dict.items():
-    repo.update_category('UPDATE bmi_category SET count = %s WHERE bmi_category = %s', count, cat)
+for cat, count in bmi_dict.items():
+    repo.update_category('UPDATE bmi SET count = %s WHERE bmi = %s', count, cat)
 
 for cat, count in sleep_disorder_dict.items():
     repo.update_category('UPDATE sleep_disorder SET count = %s WHERE sleep_disorder = %s', count, cat)
 
-repo.check_query(20)
-
-# close db connection before quitting
-conn.commit()
-cur.close()
-print('\nClosing connection ...')
-time.sleep(1)
-print('Good bye!')
-quit()
+# check query for debug
+#repo.check_query(20)
 
 
+# UTILITY
+def select_all_category(category, limit=0):
 
+    if category in util.category_list:
 
+        if limit > 0:
+            sql = 'SELECT * FROM {} LIMIT {};'.format(category, limit)
+        else:
+            sql = 'SELECT * FROM {};'.format(category)
 
+        return repo.exec(sql)
+
+    else:
+        print('<!> category:', category, 'not found')
+
+def select_all_people(limit=0):
+
+    if limit > 0:
+        sql = 'SELECT * FROM person LIMIT {};'.format(limit)
+    else:
+        sql = 'SELECT * FROM person;'
+
+    return repo.exec(sql)
+
+def get_record_count():
+    return record_count
